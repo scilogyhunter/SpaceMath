@@ -1,0 +1,61 @@
+{
+    // 通用缩进设置（对所有文件生效）
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": false,  // 禁止自动检测缩进方式
+
+    // 等宽字体设置
+    // 主要字体设置
+    "editor.fontFamily": "'Sarasa Mono SC', 'LXGW WenKai Mono', 'JetBrains Mono', Consolas, monospace,Monaco, 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Microsoft YaHei Mono'",
+    "editor.fontSize": 14,// 字体大小
+    "editor.lineHeight": 1.5,// 行高
+    "editor.letterSpacing": 0,// 字母间距
+    "editor.fontLigatures": false,// 禁用字体连字
+    "editor.fontWeight": "normal",// 字体权重
+
+    // 针对 C/C++ 文件单独设置
+    "[c]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true,
+        "editor.defaultFormatter": "ms-vscode.cpptools"  // 使用 C/C++ 扩展格式化
+    },
+    "[h]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true,
+        "editor.defaultFormatter": "ms-vscode.cpptools"
+    },
+    
+    "C_Cpp.default.compilerPath": "C:/cygwin64/bin/gcc.exe",
+    "C_Cpp.intelliSenseEngine": "default",
+    // "editor.formatOnSave": true,
+    "C_Cpp.clang_format_style": "google",
+    "C_Cpp.codeAnalysis.runAutomatically": false,
+    "files.associations": {
+        "stdio.h": "c",
+        "float.h": "c",
+        "string.h": "c"
+    },
+    "terminal.integrated.splitCwd": "workspaceRoot",
+    "terminal.integrated.cwd": "${fileDirname}",
+    "files.autoGuessEncoding": true,
+    // "workbench.colorTheme": "Monokai",
+    // cygwin 的安装目录
+    "terminal.integrated.shell.windows": "C:\\cygwin64\\bin\\bash.exe", //修改cygwin的安装路径
+    // 使得 cygwin 切换到当前工作目录
+    "terminal.integrated.env.windows": {
+        "CHERE_INVOKING": "1"
+    },
+    // 使 cygwin 能够在 vscode 中正常使用 Shell 命令
+    "terminal.integrated.shellArgs.windows": [
+        "-l"
+    ]
+    // 设置本工程默认使用cygwin命令行
+    "terminal.integrated.profiles.windows": {
+        "Cygwin": {
+            "path": "C:\\cygwin64\\bin\\bash.exe",
+            "args": ["--login", "-i", "-c", "cd '${workspaceFolder}' && bash"],
+            "icon": "terminal-bash"
+        }
+    },
+    "terminal.integrated.defaultProfile.windows": "Cygwin",
+}

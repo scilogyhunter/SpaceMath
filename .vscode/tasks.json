@@ -1,0 +1,69 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build with make",
+            "type": "shell",
+            // "command": "cd /cygdrive/d/project/cygwin/B300-L02-GNC/ && make",
+            "command": "make all",
+            // "command": "make clean && make all",
+            "args": [
+                // "-c",
+                // "make"
+            ],
+            "options": {
+                "shell": {
+                    "executable": "C:\\cygwin64\\bin\\bash.exe", // 确保路径正确
+                    "args": [
+                        "-lc"
+                    ] // 加载 Cygwin 环境
+                }
+            },
+            "group": {
+                "kind": "build", // 归类为构建任务（Ctrl+Shift+B 触发）
+                "isDefault": true // 设置为默认构建任务
+            },
+            "presentation": {
+                "reveal": "always", // 始终显示终端
+                "close": false, // 任务完成后不自动关闭终端
+                "panel": "shared",
+                "focus": false
+            },
+            // "windows": {
+            //     "command": "C:/cygwin64/bin/bash.exe",
+            //     "args": [
+            //         "-c",
+            //         "make"
+            //     ]
+            // },
+            "problemMatcher": [
+                "$gcc"  // 使用 GCC 的问题匹配器来捕获编译错误
+            ] // 捕获编译错误并显示在问题面板
+        },
+        {
+			"type": "cppbuild",
+			"label": "C/C++: gcc.exe 生成活动文件",
+			"command": "C:\\cygwin64\\bin\\gcc.exe",
+			"args": [
+				// "-fdiagnostics-color=always",
+				// "-g",
+				// "${workspaceFolder}\\src\\*.c",
+				// "-o",
+				// "${workspaceFolder}\\${fileWorkspaceFolderBasename}.exe"
+			],
+			"options": {
+				"cwd": "${fileDirname}"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+            "group": {
+                "kind": "build", // 归类为构建任务（Ctrl+Shift+B 触发）
+                "isDefault": false
+            },
+			"detail": "编译器: D:\\MinGW\\C\\mingw64\\bin\\gcc.exe"
+		}
+    ]
+}
