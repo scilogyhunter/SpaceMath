@@ -6,6 +6,10 @@ SpaceMath 是一个用于三维空间平移和旋转的 C 语言数学库，面�
 
 借助 SpaceMath，开发者可以用一致的调用风格完成任意姿态表示下的旋转计算，不必自行推导四元数乘法顺序、欧拉转序或矩阵存储约定等易错细节，从而专注于上层算法与应用实现。
 
+源码仓库地址：<https://github.com/scilogyhunter/SpaceMath>
+
+相关博客地址：<https://blog.csdn.net/scilogyhunter/category_13092682.html?fromshare=blogcolumn&sharetype=blogcolumn&sharerId=13092682&sharerefer=PC&sharesource=ScilogyHunter&sharefrom=from_link>
+
 ## 功能概览
 
 - **五种数据类型，多视图访问**：`vec3_st`、`axis_st`、`eula_st`、`quat_st`、`mat3_st` 均以联合体同时提供具名成员视图与数组视图，同一份数据既可按 `x/y/z`、`w`、`s`、`roll/pitch/yaw`、`m11`…`m33` 访问，也可按 `v[]`、`vv[][]`、`v3[]` 访问。
