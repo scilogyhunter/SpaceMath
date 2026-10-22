@@ -5,7 +5,7 @@
 /*                ███████╗██████╔╝███████║██║     █████╗      ██╔████╔██║███████║   ██║   ███████║                   */
 /*                ╚════██║██╔═══╝ ██╔══██║██║     ██╔══╝      ██║╚██╔╝██║██╔══██║   ██║   ██╔══██║                   */
 /*                ███████║██║     ██║  ██║╚██████╗███████╗    ██║ ╚═╝ ██║██║  ██║   ██║   ██║  ██║                   */
-/*                ╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝    ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝   (V0.1.2)        */
+/*                ╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝    ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝   (V0.1.3)        */
 /*                                                                                                                   */
 /*                          For linear calculations of spatial translation and rotation.                             */
 /*                              Create by scilogyhunter <scilogyhunter@gmail.com>                                    */
@@ -15,8 +15,8 @@
  * @file spacemath.h
  * @brief 空间数学库头文件
  * @author scilogyhunter
- * @date 2025.09.01
- * @version V0.1.2
+ * @date 2026.10.22
+ * @version V0.1.3
  *
  * 本文件定义了空间数学库的数据结构、常量和函数声明。
  * 提供了三维向量、旋转矩阵、四元数、欧拉角、旋转矢量和轴角等旋转表示的数据结构和操作函数。
@@ -35,6 +35,7 @@
  * | 2025.09.01 | scilogyhunter | V0.1.0  | 初始版本创建                |
  * | 2025.11.18 | scilogyhunter | V0.1.1  | 完善注释，使用doxygen格式   |
  * | 2025.12.28 | scilogyhunter | V0.1.2  | 补充API，调整参数顺序，去掉旋转向量，优化测试程序   |
+ * | 2026.10.22 | scilogyhunter | V0.1.3  | 完善接口可靠性与数值稳定性   |
  */
 
 /** @} */ /* end of group spacemath_modify */
@@ -55,7 +56,7 @@
  * CFG_FLOATWORD_BITSIZE用于配置浮点数的位数，支持32,64,128位三种类型。注意x86架构下128位浮点数实际只有80位精度，存储空间同样为16字节。
  * CFG_EULER_ORDER用于配置默认的欧拉角旋转顺序，通过字符串表示，有些必由小写xyz字母组成，长度固定为3字，从左向右来表示按哪个轴来旋转。
  * 共有6种有效旋转顺序：要求旋转的三个轴各不相同，包括"xyz","xzy","yxz","yzx","zxy","zyx"六种组合。
- * 航天上一般使用"zyx"转序，也是本库函数默认转序。如果需要其他默认转序，可以修改CFG_EULER_ORDER宏。
+ * 航天上一般使用"zyx"转序；本库的默认转序由CFG_EULER_ORDER宏指定。如果需要其他默认转序，可以修改CFG_EULER_ORDER宏。
  * 如果是临时使用非默认转序，可以使用rotation_e2m_order和rotation_m2e_order两个函数来实现，直接指定所需转序。
  * @{
  */
@@ -101,6 +102,11 @@ typedef float       ftype_t;                        /*!< 单精度浮点数类�
 #define MTAN            tanf                        /*!< 正切函数 */
 #define MATAN           atanf                       /*!< 反正切函数 */
 #define MATAN2          atan2f                      /*!< 反正切函数 */
+#if defined(HAVE_SINCOS) && defined(__USE_GNU)
+#define MSINCOS         sincosf                     /*!< 同时计算正弦和余弦（glibc扩展） */
+#else
+#define MSINCOS(a, ps, pc)  ((*(ps) = MSIN(a)), (*(pc) = MCOS(a)))    /*!< 同时计算正弦和余弦（便携回退） */
+#endif
 #define MPOW            powf                        /*!< 幂函数 */
 #define MFLOOR          floorf                      /*!< 向下取整函数 */
 #define MCEIL           ceilf                       /*!< 向上取整函数 */
@@ -145,6 +151,11 @@ typedef double          ftype_t;                    /*!< 双精度浮点数类�
 #define MTAN            tan                         /*!< 正切函数 */
 #define MATAN           atan                        /*!< 反正切函数 */
 #define MATAN2          atan2                       /*!< 反正切函数 */
+#if defined(HAVE_SINCOS) && defined(__USE_GNU)
+#define MSINCOS         sincos                      /*!< 同时计算正弦和余弦（glibc扩展） */
+#else
+#define MSINCOS(a, ps, pc)  ((*(ps) = MSIN(a)), (*(pc) = MCOS(a)))    /*!< 同时计算正弦和余弦（便携回退） */
+#endif
 #define MPOW            pow                         /*!< 幂函数 */
 #define MFLOOR          floor                       /*!< 向下取整函数 */
 #define MCEIL           ceil                        /*!< 向上取整函数 */
@@ -188,7 +199,12 @@ typedef long double          ftype_t;               /*!< 双精度浮点数类�
 #define MASIN           asinl                        /*!< 128位反正弦函数 */
 #define MTAN            tanl                         /*!< 128位正切函数 */
 #define MATAN           atanl                        /*!< 128位反正切函数 */
-#define MATAN2          atan2l                       /*!< 128位反正切函数 */
+#define MATAN2          atan2l                      /*!< 128位反正切函数 */
+#if defined(HAVE_SINCOS) && defined(__USE_GNU)
+#define MSINCOS         sincosl                     /*!< 同时计算正弦和余弦（glibc扩展） */
+#else
+#define MSINCOS(a, ps, pc)  ((*(ps) = MSIN(a)), (*(pc) = MCOS(a)))    /*!< 同时计算正弦和余弦（便携回退） */
+#endif
 #define MPOW            powl                         /*!< 128位幂函数 */
 #define MFLOOR          floorl                       /*!< 128位向下取整函数 */
 #define MCEIL           ceill                        /*!< 128位向上取整函数 */
@@ -367,13 +383,14 @@ ftype_t safe_atan2(ftype_t y, ftype_t x);
  * 轴角相关函数
  */
 bool    axis_is_zero(axis_st a);
+bool    axis_is_zero_eps(axis_st axis, ftype_t epsilon);
 bool    axis_is_equal(axis_st a, axis_st b);
 bool    axis_is_equal_eps(axis_st a, axis_st b, ftype_t epsilon);
 axis_st axis(ftype_t x, ftype_t y, ftype_t z, ftype_t angle);
 axis_st axis_v(ftype_t v[4]);
 axis_st axis_from_vector_angle(vec3_st v3, ftype_t a);
+axis_st axis_from_vector_vector(vec3_st to, vec3_st from);
 axis_st axis_zero(void);
-axis_st axis_from_vv(vec3_st from, vec3_st to);
 
 /*!
  * 欧拉角相关函数
@@ -518,7 +535,7 @@ quat_st quat_normalize(quat_st q);
 quat_st quat_continuous(quat_st q0, quat_st q1);
 quat_st quat_pow(quat_st q, ftype_t exponent);
 quat_st quat_from_axis_angle(vec3_st axis, ftype_t angle);
-quat_st quat_from_vv(vec3_st from, vec3_st to);
+quat_st quat_from_vv(vec3_st to, vec3_st from);
 quat_st quat_lerp(quat_st from, quat_st to, ftype_t t);
 quat_st quat_slerp(quat_st from, quat_st to, ftype_t t);
 quat_st quat_rotation_x(ftype_t angle);

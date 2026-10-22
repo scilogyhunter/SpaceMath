@@ -5,7 +5,7 @@
 /*                ███████╗██████╔╝███████║██║     █████╗      ██╔████╔██║███████║   ██║   ███████║                   */
 /*                ╚════██║██╔═══╝ ██╔══██║██║     ██╔══╝      ██║╚██╔╝██║██╔══██║   ██║   ██╔══██║                   */
 /*                ███████║██║     ██║  ██║╚██████╗███████╗    ██║ ╚═╝ ██║██║  ██║   ██║   ██║  ██║                   */
-/*                ╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝    ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝   (V0.1.2)        */
+/*                ╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝    ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝   (V0.1.3)        */
 /*                                                                                                                   */
 /*                          For linear calculations of spatial translation and rotation.                             */
 /*                              Create by scilogyhunter <scilogyhunter@gmail.com>                                    */
@@ -15,8 +15,8 @@
  * @file test_quat.c
  * @brief 四元数运算测试文件
  * @author scilogyhunter
- * @date 2025.09.01
- * @version V0.1.2
+ * @date 2026.10.22
+ * @version V0.1.3
  *
  * 本文件实现了四元数运算的单元测试，验证了四元数的创建、比较、点积、角度计算、长度和旋转等基本功能。
  */
@@ -230,7 +230,7 @@ int test_quat_from_axis_angle(void) {
 int test_quat_from_vv(void) {
     vec3_st from = vec3(1.0, 0.0, 0.0);
     vec3_st to = vec3(0.0, 1.0, 0.0);
-    quat_st q = quat_from_vv(from, to);
+    quat_st q = quat_from_vv(to, from);
     
     // 验证旋转效果
     vec3_st rotated = quat_rotate_vec3(q, from);

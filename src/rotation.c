@@ -5,7 +5,7 @@
 /*                ███████╗██████╔╝███████║██║     █████╗      ██╔████╔██║███████║   ██║   ███████║                   */
 /*                ╚════██║██╔═══╝ ██╔══██║██║     ██╔══╝      ██║╚██╔╝██║██╔══██║   ██║   ██╔══██║                   */
 /*                ███████║██║     ██║  ██║╚██████╗███████╗    ██║ ╚═╝ ██║██║  ██║   ██║   ██║  ██║                   */
-/*                ╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝    ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝   (V0.1.2)        */
+/*                ╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝    ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝   (V0.1.3)        */
 /*                                                                                                                   */
 /*                          For linear calculations of spatial translation and rotation.                             */
 /*                              Create by scilogyhunter <scilogyhunter@gmail.com>                                    */
@@ -15,8 +15,8 @@
  * @file rotation.c
  * @brief 旋转表示转换实现文件
  * @author scilogyhunter
- * @date 2025.09.01
- * @version V0.1.2
+ * @date 2026.10.22
+ * @version V0.1.3
  *
  * 本文件实现了不同旋转表示之间的转换，包括欧拉角、旋转矩阵、四元数、旋转矢量和轴角表示。
  * 支持各种旋转表示之间的相互转换和旋转操作。
@@ -48,7 +48,7 @@
  */
 axis_st rotation_a_rvs(axis_st a)
 {
-    return axis(-a.v3.x, -a.v3.y, -a.v3.z, a.angle);    /* 旋转轴取反，角度保持不变 */
+    return axis(a.v3.x, a.v3.y, a.v3.z, -a.angle);    /* 旋转轴取反，角度保持不变 */
 }
 
 
@@ -192,7 +192,7 @@ mat3_st rotation_m_rz(ftype_t angle)
  */
 quat_st rotation_q_rvs(quat_st q)
 {
-    return quat_conjugate(q);    /* 四元数的逆等于共轭 */
+    return quat_conjugate(quat_normalize(q));    /* 单位四元数的逆等于共轭 */
 }
 
 
@@ -446,7 +446,6 @@ eula_st rotation_m2e_order(mat3_st m, char *order)
             }
         }
     } else {
-        fprintf(stderr, "错误: 未知的旋转顺序 '%s'\n", order);
         return eula_zero();
     }
     
@@ -615,26 +614,24 @@ axis_st rotation_m2a(mat3_st m)
 {
     axis_st a;
 
-    /* 旋转矩阵直接转为轴角的数学公式为： 
-     * angle = acos((trace(R) - 1) / 2)
-     * axis = (R32 - R23, R13 - R31, R21 - R12) / (2*sin(angle))
-     * 但为了避免数值不稳定性，通常先将旋转矩阵转换为四元数，再从四元数提取轴角.
-    */
-    a.angle = safe_acos((m.m11 + m.m22 + m.m33 - MFLOAT_C(1.0)) * MFLOAT_C(0.5)); /* 计算旋转角度 */
-    if (MFABS(a.angle) < MEPSILON) {
-        return axis_zero();                                 /* 角度太小，返回零轴角 */
-    }
-    ftype_t k_2sin = MSIN(a.angle) * MFLOAT_C(2.0);          /* 计算2*sin(angle) */
-    if (MFABS(k_2sin) < MEPSILON) {
-        return axis_zero();                                 /* 避免除以零，返回零轴角 */
+    /* 直接用 angle = acos((trace(R)-1)/2) 提取角度时，旋转角接近π存在两个数值问题：
+     * 1. (trace-1)/2 在浮点数上坍缩为-1，角度信息丢失（返回π而非π-δ）；
+     * 2. 轴提取需除以2*sin(angle)，而sin(π)的浮点残差是垃圾值，导致轴方向错误。
+     * 四元数路径数值稳定：m2q用Shepperd方法按最大分量分支求解，
+     * q2a用2*acos(q.w)，θ→π时q.w→0，均无精度损失。
+     */
+    a = rotation_q2a(rotation_m2q(m));
+
+    /* q2a的角度范围为[-π, π]，规范到[0, π]，与原acos实现的取值范围一致。
+     * 利用轴角表示的等价性：(n̂, θ) ≡ (-n̂, -θ) */
+    if (a.angle < MFLOAT_C(0.0)) {
+        a.v3.x = -a.v3.x;                       /* 翻转轴向量X分量 */
+        a.v3.y = -a.v3.y;                       /* 翻转轴向量Y分量 */
+        a.v3.z = -a.v3.z;                       /* 翻转轴向量Z分量 */
+        a.angle = -a.angle;                     /* 翻转角度 */
     }
 
-    a.v3.x = (m.m32 - m.m23) / k_2sin;                      /* 计算轴向量的X分量 */
-    a.v3.y = (m.m13 - m.m31) / k_2sin;                      /* 计算轴向量的Y分量 */
-    a.v3.z = (m.m21 - m.m12) / k_2sin;                      /* 计算轴向量的Z分量 */
-    a.v3 = vec3_unit(a.v3);                                 /* 归一化轴向量 */
-
-    return (a);     /* 通过四元数转换为轴角 */
+    return (a);
 }
 
 
@@ -696,8 +693,11 @@ axis_st rotation_q2a(quat_st q)
     /* 完全归一化四元数 */
     q = quat_normalize(q);                         /* 确保四元数是单位四元数 */
 
-    /* 计算旋转角度 */
-    angle = MFLOAT_C(2.0) * MACOS(q.w);                       /* 从四元数实部计算角度 */
+    /* 计算旋转角度
+     * 用2*atan2(|v|, w)而非2*acos(w)：acos在w→1（角度→0）处斜率无穷大，
+     * 浮点数上w会坍缩为1，小角度信息丢失（返回0）；
+     * atan2双参数形式在角度→0和角度→π两端都数值稳定。 */
+    angle = MFLOAT_C(2.0) * MATAN2(vec3_len(q.v3), q.w);      /* 从四元数向量模与实部计算角度 */
     /* 将角度限制在[-π, π]范围内 */
     angle = MREMAINDER(angle, MPI2);
     /* 处理小角度情况，避免除以零 */
@@ -826,7 +826,7 @@ mat3_st rotation_vv2m(vec3_st to, vec3_st from)
  */
 quat_st rotation_vv2q(vec3_st to, vec3_st from)
 {
-    return quat_from_vv(from, to);                 /* 调用四元数从向量到向量函数 */
+    return quat_from_vv(to, from);                 /* 调用四元数从向量到向量函数，参数顺序(to, from) */
 }
 
 
@@ -839,7 +839,7 @@ quat_st rotation_vv2q(vec3_st to, vec3_st from)
  */
 axis_st rotation_vv2a(vec3_st to, vec3_st from)
 {
-    return axis_from_vv(from, to);                 /* 调用轴角从向量到向量函数 */
+    return axis_from_vector_vector(to, from);                 /* 调用轴角从向量到向量函数 */
 }
 
 

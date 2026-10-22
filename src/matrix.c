@@ -5,7 +5,7 @@
 /*                ███████╗██████╔╝███████║██║     █████╗      ██╔████╔██║███████║   ██║   ███████║                   */
 /*                ╚════██║██╔═══╝ ██╔══██║██║     ██╔══╝      ██║╚██╔╝██║██╔══██║   ██║   ██╔══██║                   */
 /*                ███████║██║     ██║  ██║╚██████╗███████╗    ██║ ╚═╝ ██║██║  ██║   ██║   ██║  ██║                   */
-/*                ╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝    ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝   (V0.1.2)        */
+/*                ╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝    ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝   (V0.1.3)        */
 /*                                                                                                                   */
 /*                          For linear calculations of spatial translation and rotation.                             */
 /*                              Create by scilogyhunter <scilogyhunter@gmail.com>                                    */
@@ -15,8 +15,8 @@
  * @file matrix.c
  * @brief 矩阵运算实现文件
  * @author scilogyhunter
- * @date 2025.09.01
- * @version V0.1.2
+ * @date 2026.10.22
+ * @version V0.1.3
  *
  * 本文件实现了3x3矩阵的基本运算，包括创建、转置、求逆、乘法、插值等操作。
  * 矩阵运算在计算机图形学、物理模拟和数值计算中具有广泛应用。
@@ -73,22 +73,27 @@ mat3_st mat3(ftype_t m11, ftype_t m12, ftype_t m13, ftype_t m21, ftype_t m22, ft
 
 /*!
  * @brief 通过v[9]数组对3x3矩阵赋值
- * @param v 输入数组，注意需要是列优先存储，如果是行优先存储需要再进行一次转置
+ * @param v 输入数组，列优先存储，与 mat3_st 的 v[9] 视图一致
  * @return 返回创建的3x3矩阵
- * @note 使用一维数组初始化3x3矩阵，数组索引0-8对应矩阵元素
+ * @note 使用一维数组初始化3x3矩阵，数组按列优先存储：
+ *       v[0..2] 为第1列，v[3..5] 为第2列，v[6..8] 为第3列。
+ *       因此 mat3_v(m.v) == m 恒成立，与 mat3_vv / mat3_v3 自洽。
  */
 mat3_st mat3_v(ftype_t v[9])
 {
+    if (v == NULL) {
+        return mat3_zero();
+    }
     mat3_st result;
-    result.m11 = v[0];    /* 数组索引0对应m11元素 */
-    result.m12 = v[1];    /* 数组索引1对应m12元素 */
-    result.m13 = v[2];    /* 数组索引2对应m13元素 */
-    result.m21 = v[3];    /* 数组索引3对应m21元素 */
-    result.m22 = v[4];    /* 数组索引4对应m22元素 */
-    result.m23 = v[5];    /* 数组索引5对应m23元素 */
-    result.m31 = v[6];    /* 数组索引6对应m31元素 */
-    result.m32 = v[7];    /* 数组索引7对应m32元素 */
-    result.m33 = v[8];    /* 数组索引8对应m33元素 */
+    result.m11 = v[0];    /* v[0]→m11（第1列第1行） */
+    result.m21 = v[1];    /* v[1]→m21（第1列第2行） */
+    result.m31 = v[2];    /* v[2]→m31（第1列第3行） */
+    result.m12 = v[3];    /* v[3]→m12（第2列第1行） */
+    result.m22 = v[4];    /* v[4]→m22（第2列第2行） */
+    result.m32 = v[5];    /* v[5]→m32（第2列第3行） */
+    result.m13 = v[6];    /* v[6]→m13（第3列第1行） */
+    result.m23 = v[7];    /* v[7]→m23（第3列第2行） */
+    result.m33 = v[8];    /* v[8]→m33（第3列第3行） */
     return result;
 }
 
@@ -101,6 +106,9 @@ mat3_st mat3_v(ftype_t v[9])
  */
 mat3_st mat3_vv(ftype_t vv[3][3])
 {
+    if (vv == NULL) {
+        return mat3_zero();
+    }
     mat3_st result;
     result.m11 = vv[0][0];    /* 第一行第一列元素 */
     result.m12 = vv[1][0];    /* 第一行第二列元素 */
@@ -123,6 +131,9 @@ mat3_st mat3_vv(ftype_t vv[3][3])
  * */
 mat3_st mat3_v3(vec3_st v3[3])
 {
+    if (v3 == NULL) {
+        return mat3_zero();
+    }
     mat3_st result;
     result.v3[0] = v3[0];
     result.v3[1] = v3[1];
@@ -720,17 +731,17 @@ mat3_st mat3_exp(mat3_st m)
     
     /* + M²/2! */
     term = mat3_mul(term, m);            /* 计算M² */
-    term = mat3_mul_f(term, 0.5);        /* 除以2! */
+    term = mat3_mul_f(term, MFLOAT_C(0.5));        /* 除以2! */
     result = mat3_add(result, term);
     
     /* + M³/6 */
     term = mat3_mul(term, m);            /* 计算M³ */
-    term = mat3_mul_f(term, 1.0/3.0);    /* 除以3! */
+    term = mat3_mul_f(term, MFLOAT_C(1.0/6.0));    /* 除以3!（3!=6） */
     result = mat3_add(result, term);
     
     /* + M⁴/24 */
     term = mat3_mul(term, m);            /* 计算M⁴ */
-    term = mat3_mul_f(term, 1.0/4.0);    /* 除以4! */
+    term = mat3_mul_f(term, MFLOAT_C(1.0/24.0));   /* 除以4!（4!=24） */
     result = mat3_add(result, term);
     
     return result;
@@ -754,9 +765,9 @@ mat3_st mat3_log(mat3_st m)
     mat3_st a3 = mat3_mul(a2, a);                /* 计算A³ */
     mat3_st a4 = mat3_mul(a3, a);                /* 计算A⁴ */
     
-    result = mat3_sub(result, mat3_mul_f(a2, 0.5));        /* 减去A²/2 */
-    result = mat3_add(result, mat3_mul_f(a3, 1.0/3.0));    /* 加上A³/3 */
-    result = mat3_sub(result, mat3_mul_f(a4, 0.25));       /* 减去A⁴/4 */
+    result = mat3_sub(result, mat3_mul_f(a2, MFLOAT_C(0.5)));        /* 减去A²/2 */
+    result = mat3_add(result, mat3_mul_f(a3, MFLOAT_C(1.0/3.0)));    /* 加上A³/3 */
+    result = mat3_sub(result, mat3_mul_f(a4, MFLOAT_C(0.25)));       /* 减去A⁴/4 */
     
     return result;
 }

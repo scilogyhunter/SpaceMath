@@ -5,7 +5,7 @@
 /*                ███████╗██████╔╝███████║██║     █████╗      ██╔████╔██║███████║   ██║   ███████║                   */
 /*                ╚════██║██╔═══╝ ██╔══██║██║     ██╔══╝      ██║╚██╔╝██║██╔══██║   ██║   ██╔══██║                   */
 /*                ███████║██║     ██║  ██║╚██████╗███████╗    ██║ ╚═╝ ██║██║  ██║   ██║   ██║  ██║                   */
-/*                ╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝    ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝   (V0.1.2)        */
+/*                ╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝    ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝   (V0.1.3)        */
 /*                                                                                                                   */
 /*                          For linear calculations of spatial translation and rotation.                             */
 /*                              Create by scilogyhunter <scilogyhunter@gmail.com>                                    */
@@ -15,8 +15,8 @@
  * @file test_eula.c
  * @brief 测试欧拉角等于函数实现文件
  * @author scilogyhunter
- * @date 2025.09.01
- * @version V0.1.2
+ * @date 2026.10.22
+ * @version V0.1.3
  *
  * 本文件定义了测试欧拉角等于函数和全局变量，用于各个测试模块的实现。
  */
@@ -82,9 +82,9 @@ int test_eula_add(void) {
 }
 
 int test_eula_sub(void) {
-    eula_st e0 = eula(MFLOAT_C(1.0), MFLOAT_C(1.0), MFLOAT_C(1.0));
-    eula_st e1 = eula(MFLOAT_C(0.0), MFLOAT_C(0.0), MFLOAT_C(0.0));
-    eula_st expected_sub = eula(MFLOAT_C(1.0), MFLOAT_C(1.0), MFLOAT_C(1.0));
+    eula_st e0 = eula(MFLOAT_C(0.0), MFLOAT_C(0.0), MFLOAT_C(0.0));
+    eula_st e1 = eula(MFLOAT_C(1.0), MFLOAT_C(1.0), MFLOAT_C(1.0));
+    eula_st expected_sub = eula(MFLOAT_C(-1.0), MFLOAT_C(-1.0), MFLOAT_C(-1.0));
     eula_st result_sub = eula_sub(e0, e1);
 
     if (!eula_equal(result_sub, expected_sub, MEPSILON)) return -1;

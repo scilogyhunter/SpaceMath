@@ -5,7 +5,7 @@
 /*                ███████╗██████╔╝███████║██║     █████╗      ██╔████╔██║███████║   ██║   ███████║                   */
 /*                ╚════██║██╔═══╝ ██╔══██║██║     ██╔══╝      ██║╚██╔╝██║██╔══██║   ██║   ██╔══██║                   */
 /*                ███████║██║     ██║  ██║╚██████╗███████╗    ██║ ╚═╝ ██║██║  ██║   ██║   ██║  ██║                   */
-/*                ╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝    ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝   (V0.1.2)        */
+/*                ╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝    ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝   (V0.1.3)        */
 /*                                                                                                                   */
 /*                          For linear calculations of spatial translation and rotation.                             */
 /*                              Create by scilogyhunter <scilogyhunter@gmail.com>                                    */
@@ -15,8 +15,8 @@
  * @file quat.c
  * @brief 四元数运算实现文件
  * @author scilogyhunter
- * @date 2025.09.01
- * @version V0.1.2
+ * @date 2026.10.22
+ * @version V0.1.3
  *
  * 本文件实现了四元数的基本运算，包括创建、归一化、乘法、插值等操作。
  * 四元数用于表示三维空间中的旋转，具有避免万向节锁的优点。
@@ -69,6 +69,10 @@ quat_st quat(ftype_t x, ftype_t y, ftype_t z, ftype_t w)
  */
 quat_st quat_v(ftype_t v[4])
 {
+    if (v == NULL) {
+        quat_st q = quat(MFLOAT_C(0.0), MFLOAT_C(0.0), MFLOAT_C(0.0), MFLOAT_C(0.0));
+        return  (q);
+    }
     quat_st result;
     result.x = v[0];    /* 数组索引0对应x分量 */
     result.y = v[1];    /* 数组索引1对应y分量 */
@@ -461,22 +465,28 @@ quat_st quat_continuous(quat_st q0, quat_st q1)
 quat_st quat_pow(quat_st q, ftype_t exponent)
 {
     quat_st result;
-    /* 检查四元数是否接近纯虚数 */
-    if (MFABS(q.w) < MFLOAT_C(1.0) - MEPSILON) {
-        ftype_t alpha = MACOS(q.w);          /* 计算旋转角度 */
-        ftype_t new_alpha = alpha * exponent; /* 计算新的旋转角度 */
-        ftype_t s = MSIN(new_alpha) / MSIN(alpha); /* 计算缩放因子 */
-        result.x = q.x * s;                  /* 缩放x分量 */
-        result.y = q.y * s;                  /* 缩放y分量 */
-        result.z = q.z * s;                  /* 缩放z分量 */
-        result.w = MCOS(new_alpha);          /* 计算新的实部 */
-    } else {
-        /* 如果四元数接近纯虚数，直接返回原四元数 */
+    ftype_t v_len = vec3_len(q.v3);    /* 计算虚部模长 */
+
+    /* 虚部模长为零（纯实数四元数，无旋转轴），幂运算无定义，原样返回 */
+    if (v_len < MEPSILON) {
         result.x = q.x;
         result.y = q.y;
         result.z = q.z;
         result.w = q.w;
+        return result;
     }
+
+    /* 半角 alpha = θ/2 用 atan2(|v|, w) 而非 acos(w) 提取：
+     * 对单位四元数两者数学上等价，但 acos 在 w→±1（θ→0 或 θ→2π）处斜率无穷大，
+     * 浮点舍入会使角度坍缩、指数不再生效；atan2 双参数形式则在两端都稳定。 */
+    ftype_t alpha = MATAN2(v_len, q.w);              /* 半角 */
+    ftype_t new_alpha = alpha * exponent;            /* 缩放后的半角 */
+    ftype_t s = MSIN(new_alpha) / MSIN(alpha);       /* 虚部缩放因子 */
+
+    result.x = q.x * s;                  /* 缩放x分量 */
+    result.y = q.y * s;                  /* 缩放y分量 */
+    result.z = q.z * s;                  /* 缩放z分量 */
+    result.w = MCOS(new_alpha);          /* 计算新的实部 */
     return result;
 }
 
@@ -491,7 +501,7 @@ quat_st quat_pow(quat_st q, ftype_t exponent)
 quat_st quat_from_axis_angle(vec3_st axis, ftype_t angle)
 {
      /* 检查角度是否为0或2π的倍数 */
-    ftype_t normalized_angle = MFMOD(angle, 2.0 * MPI);
+    ftype_t normalized_angle = MFMOD(angle, MPI2);
     if (MFABS(normalized_angle) < MEPSILON) {
         return (quat_identity());    /* 角度为0，返回单位四元数 */
     }
@@ -531,12 +541,12 @@ quat_st quat_from_axis_angle(vec3_st axis, ftype_t angle)
 
 /*!
  * @brief 从两个向量创建四元数
- * @param from 起始向量
  * @param to 目标向量
+ * @param from 起始向量
  * @return 返回将from旋转到to的四元数
- * @note 计算将向量from旋转到向量to所需的四元数
+ * @note 计算将向量from旋转到向量to所需的四元数，参数顺序统一为(to, from)
  */
-quat_st quat_from_vv(vec3_st from, vec3_st to)
+quat_st quat_from_vv(vec3_st to, vec3_st from)
 {
     vec3_st  cross;
     
@@ -547,6 +557,28 @@ quat_st quat_from_vv(vec3_st from, vec3_st to)
     
     /* 创建四元数：虚部为叉积，实部为点积加长度乘积 */
     quat_st result = quat(cross.x, cross.y, cross.z, d + MSQRT(a_ls * b_ls));
+
+    /* 反向向量对（夹角180°）时叉积为零、实部为零，上述公式退化为零四元数，
+     * 无法表示旋转。此时取与 from 垂直的任意轴，构造180°纯虚单位四元数。 */
+    if ((a_ls > MEPSILON) && (b_ls > MEPSILON) && quat_is_zero(result)) {
+        vec3_st f = vec3_unit(from);          /* 单位化起始向量 */
+        vec3_st axis;
+        ftype_t ax = MFABS(f.x);
+        ftype_t ay = MFABS(f.y);
+        ftype_t az = MFABS(f.z);
+
+        /* 选择与 f 分量最小的坐标轴做叉积，保证结果轴向量非零 */
+        if ((ax <= ay) && (ax <= az)) {
+            axis = vec3_cross(f, vec3(MFLOAT_C(1.0), MFLOAT_C(0.0), MFLOAT_C(0.0)));
+        } else if (ay <= az) {
+            axis = vec3_cross(f, vec3(MFLOAT_C(0.0), MFLOAT_C(1.0), MFLOAT_C(0.0)));
+        } else {
+            axis = vec3_cross(f, vec3(MFLOAT_C(0.0), MFLOAT_C(0.0), MFLOAT_C(1.0)));
+        }
+        axis = vec3_unit(axis);
+        return quat(axis.x, axis.y, axis.z, MFLOAT_C(0.0));
+    }
+
     return quat_normalize(result);             /* 返回归一化后的四元数 */
 }
 
@@ -610,7 +642,9 @@ quat_st quat_slerp(quat_st from, quat_st to, ftype_t t)
     result.y = from.y * f0 + tmp1.y * f1;    /* y分量插值 */
     result.z = from.z * f0 + tmp1.z * f1;    /* z分量插值 */
     result.w = from.w * f0 + tmp1.w * f1;    /* w分量插值 */
-    return result;
+
+    /* 归一化保证输出为单位四元数：d>0.9995 的线性近似分支结果模长通常不为1 */
+    return quat_normalize(result);
 }
 
 
@@ -623,12 +657,16 @@ quat_st quat_slerp(quat_st from, quat_st to, ftype_t t)
 ftype_t quat_angle(quat_st q)
 {
     ftype_t angle;
-    
-    /* 计算旋转角度 */
-    angle = MFLOAT_C(2.0) * MACOS(q.w);  /* 从四元数实部计算角度 */
+    ftype_t v_len;
+
+    /* 用 2*atan2(|v|, w) 而非 2*acos(w) 计算角度：acos 在自变量趋近 ±1 处斜率无穷大，
+     * 浮点数上 w 会因舍入坍缩为 ±1，使小角度信息彻底丢失（返回 0）；
+     * atan2 双参数形式在角度→0 和角度→2π 两端都数值稳定。 */
+    v_len = vec3_len(q.v3);                      /* 计算虚部模长 */
+    angle = MFLOAT_C(2.0) * MATAN2(v_len, q.w);  /* 由虚部模长与实部求旋转角 */
     /* 将角度限制在[-π, π]范围内 */
     angle = MREMAINDER(angle, MPI2);
-    
+
     return (angle);
 }
 
@@ -748,7 +786,7 @@ vec3_st quat_rotate_vec3_fast(quat_st q, vec3_st v)
     vec3_st u_cross_v = vec3_cross(u, v);                    /* u × v */
     vec3_st temp = vec3_add(vec3_mul_f(v, s), u_cross_v);    /* s v + u × v */
     vec3_st u_cross_temp = vec3_cross(u, temp);              /* u × (s v + u × v) */
-    vec3_st result = vec3_add(v, vec3_mul_f(u_cross_temp, 2.0f)); /* v + 2u × (s v + u × v) */
+    vec3_st result = vec3_add(v, vec3_mul_f(u_cross_temp, MFLOAT_C(2.0))); /* v + 2u × (s v + u × v) */
     
     return result;
 }

@@ -5,7 +5,7 @@
 /*                ███████╗██████╔╝███████║██║     █████╗      ██╔████╔██║███████║   ██║   ███████║                   */
 /*                ╚════██║██╔═══╝ ██╔══██║██║     ██╔══╝      ██║╚██╔╝██║██╔══██║   ██║   ██╔══██║                   */
 /*                ███████║██║     ██║  ██║╚██████╗███████╗    ██║ ╚═╝ ██║██║  ██║   ██║   ██║  ██║                   */
-/*                ╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝    ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝   (V0.1.2)        */
+/*                ╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝    ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝   (V0.1.3)        */
 /*                                                                                                                   */
 /*                          For linear calculations of spatial translation and rotation.                             */
 /*                              Create by scilogyhunter <scilogyhunter@gmail.com>                                    */
@@ -15,8 +15,8 @@
  * @file eula.c
  * @brief 空间数学库欧拉角实现文件
  * @author scilogyhunter
- * @date 2025.09.01
- * @version V0.1.2
+ * @date 2026.10.22
+ * @version V0.1.3
  *
  * 本文件实现了空间数学库欧拉角相关函数，包括欧拉角的验证、转换、加减、规范化等。
  */
@@ -106,6 +106,9 @@ eula_st  eula(ftype_t x, ftype_t y, ftype_t z)
  */
 eula_st eula_v(ftype_t v[3]) 
 {
+    if (v == NULL) {
+        return eula_zero();
+    }
     eula_st e = {.x = v[0], .y = v[1], .z = v[2]};    /* 使用数组初始化欧拉角 */
 
     return e;                         /* 返回创建的欧拉角 */
@@ -189,9 +192,9 @@ eula_st  eula_add(eula_st e0, eula_st e1)
 eula_st  eula_sub(eula_st e0, eula_st e1) 
 {
     eula_st result;
-    result.x = e0.x + e1.x;
-    result.y = e0.y + e1.y;
-    result.z = e0.z + e1.z;
+    result.x = e0.x - e1.x;
+    result.y = e0.y - e1.y;
+    result.z = e0.z - e1.z;
     return result;
 } 
 

@@ -58,7 +58,7 @@ $(LIB): $(LIB_OBJS) | $(LIB_DIR)
 
 # Create main test executable (links all test object files)
 $(TEST_MAIN): $(TEST_OBJS) $(LIB) | $(BIN_DIR)
-	$(CC) -o $@ $(TEST_OBJS) -L$(LIB_DIR) -lspacemath -lm
+	$(CC) -o $@ $(TEST_OBJS) -L$(LIB_DIR) -lspacemath -lm -lquadmath
 
 # Compile library object files
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)

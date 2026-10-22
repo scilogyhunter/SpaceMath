@@ -5,7 +5,7 @@
 /*                ███████╗██████╔╝███████║██║     █████╗      ██╔████╔██║███████║   ██║   ███████║                   */
 /*                ╚════██║██╔═══╝ ██╔══██║██║     ██╔══╝      ██║╚██╔╝██║██╔══██║   ██║   ██╔══██║                   */
 /*                ███████║██║     ██║  ██║╚██████╗███████╗    ██║ ╚═╝ ██║██║  ██║   ██║   ██║  ██║                   */
-/*                ╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝    ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝   (V0.1.2)        */
+/*                ╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝    ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝   (V0.1.3)        */
 /*                                                                                                                   */
 /*                          For linear calculations of spatial translation and rotation.                             */
 /*                              Create by scilogyhunter <scilogyhunter@gmail.com>                                    */
@@ -15,8 +15,8 @@
  * @file test_axis.c
  * @brief 测试轴角函数实现文件
  * @author scilogyhunter
- * @date 2025.09.01
- * @version V0.1.2
+ * @date 2026.10.22
+ * @version V0.1.3
  *
  * 本文件定义了测试轴角函数和全局变量，用于各个测试模块的实现。
  */
@@ -92,10 +92,10 @@ int test_axis_from_vector_angle(void) {
     return 0;
 }
 
-int test_axis_from_vv(void) {
+int test_axis_from_vector_vector(void) {
     vec3_st from = vec3(1.0, 0.0, 0.0);
     vec3_st to = vec3(0.0, 1.0, 0.0);
-    axis_st a = axis_from_vv(from, to);
+    axis_st a = axis_from_vector_vector(to, from);
 
     // 验证旋转效果
     vec3_st rotated = rotation_aRv(a, from);
@@ -111,7 +111,7 @@ int test_axis_all(void) {
     test_print_result("axis_v", test_axis_v());
     test_print_result("axis_zero", test_axis_zero());
     test_print_result("axis_from_vector_angle", test_axis_from_vector_angle());
-    test_print_result("axis_from_vv", test_axis_from_vv());
+    test_print_result("axis_from_vector_vector", test_axis_from_vector_vector());
     
     return 0;
 }

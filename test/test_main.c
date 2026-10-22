@@ -5,7 +5,7 @@
 /*                ███████╗██████╔╝███████║██║     █████╗      ██╔████╔██║███████║   ██║   ███████║                   */
 /*                ╚════██║██╔═══╝ ██╔══██║██║     ██╔══╝      ██║╚██╔╝██║██╔══██║   ██║   ██╔══██║                   */
 /*                ███████║██║     ██║  ██║╚██████╗███████╗    ██║ ╚═╝ ██║██║  ██║   ██║   ██║  ██║                   */
-/*                ╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝    ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝   (V0.1.2)        */
+/*                ╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝    ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝   (V0.1.3)        */
 /*                                                                                                                   */
 /*                          For linear calculations of spatial translation and rotation.                             */
 /*                              Create by scilogyhunter <scilogyhunter@gmail.com>                                    */
@@ -15,8 +15,8 @@
  * @file test_main.c
  * @brief 测试主程序实现文件
  * @author scilogyhunter
- * @date 2025.09.01
- * @version V0.1.2
+ * @date 2026.10.22
+ * @version V0.1.3
  *
  * 本文件实现了测试主程序，负责调用各个测试模块并汇总测试结果。
  */
@@ -42,7 +42,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <time.h>
 #include "../src/spacemath.h"
+#if (CFG_FLOATWORD_BITSIZE == 128)
+#include <quadmath.h>
+#endif
 
 // 声明各个模块的测试函数
 int test_matrix_all(void);
@@ -142,7 +146,10 @@ void test_print_summary(void) {
 bool float_equal(ftype_t a, ftype_t b, ftype_t epsilon) {
     if ((g_print_eps) && (MFABS(a - b) > epsilon)) {
 #if (CFG_FLOATWORD_BITSIZE == 128)
-    printf("epsilon: %+.6Qe\n", MFABS(a - b));
+    char buf[128];
+    // 注意：格式字符串中只能有一个转换说明符
+    quadmath_snprintf(buf, sizeof(buf), "epsilon: %+.6Qe\n", MFABS(a - b)); 
+    printf("%s\n", buf);
 #else
     printf("epsilon: %+.6e\n", MFABS(a - b));
 #endif
@@ -203,6 +210,8 @@ bool eula_equal(eula_st a, eula_st b, ftype_t epsilon) {
 
 // 测试主程序
 int main(int argc, char *argv[]) {
+    //增加执行耗时统计功能
+    clock_t start_time = clock();
     // 解析命令行参数
     g_verbose_mode = false;
     for (int i = 1; i < argc; i++) {
@@ -224,7 +233,7 @@ int main(int argc, char *argv[]) {
         }
     }
     
-    printf("spacemath(v0.1.2) test\n");
+    printf("spacemath(v0.1.3) test\n");
     printf("CFG_EULER_ORDER       = \"%s\"\n", CFG_EULER_ORDER);
     printf("CFG_FLOATWORD_BITSIZE = %d bit\n", CFG_FLOATWORD_BITSIZE);
     printf("sizeof(void *)        = %ld bit\n", sizeof(void *) * 8);
@@ -243,6 +252,8 @@ int main(int argc, char *argv[]) {
 
     // 打印最终统计结果
     test_print_summary();
+    // 打印执行耗时
+    printf("测试耗时: %.3f 秒\n", (double)(clock() - start_time) / CLOCKS_PER_SEC);
     
     return g_test_stats.failed_tests > 0 ? 1 : 0;
 }
